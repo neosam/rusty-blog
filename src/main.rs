@@ -33,6 +33,20 @@ fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
     format!("Hello {}! id: {}", info.1, info.0)
 }
 
+#[get("/static/{name}")]
+fn static_files(info: web::Path<String>) -> impl Responder {
+    let filename = format!("static/{}", info.as_ref());
+    if let Ok(mut file) = File::open(filename) {
+        let mut file_content = String::new();
+        if let Err(_) = file.read_to_string(&mut file_content) {
+            return HttpResponse::new(http::StatusCode::NOT_FOUND);
+        }
+        HttpResponse::Ok().body(file_content)
+    } else {
+        return HttpResponse::new(http::StatusCode::NOT_FOUND);
+    }
+}
+
 #[get("/post/{name}.html")]
 fn post(info: web::Path<(String)>) -> impl Responder {
     let filename = format!("posts/{}.md", info.as_ref());
@@ -55,7 +69,8 @@ fn main() -> std::io::Result<()> {
         || App::new()
             .service(advanced_index)
             .service(index)
-            .service(post))
+            .service(post)
+            .service(static_files))
         .bind("127.0.0.1:8080")?
         .run()
 }
