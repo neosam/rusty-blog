@@ -2,6 +2,26 @@ use actix_web::{web, App, HttpServer, Responder, HttpResponse, http};
 use actix_web::get;
 use std::fs::File;
 use std::io::Read;
+use tinytemplate::TinyTemplate;
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct Context {
+    main: String
+}
+
+fn render_template(filename: &str, text: &str) -> std::io::Result<String> {
+    let mut template_text = String::new();
+    File::open(format!("templates/{}.html", filename))?
+        .read_to_string(&mut template_text)?;
+    
+    let mut tt = TinyTemplate::new();
+    tt.add_template("main", &template_text);
+    
+    Ok(tt.render("main", &Context {
+        main: text.to_string(),
+    }).unwrap())
+}
 
 #[get("/")]
 fn index() -> impl Responder {
@@ -15,13 +35,15 @@ fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
 
 #[get("/post/{name}.html")]
 fn post(info: web::Path<(String)>) -> impl Responder {
-    let filename = format!("post/{}.md", info.as_ref());
+    let filename = format!("posts/{}.md", info.as_ref());
     if let Ok(mut file) = File::open(filename) {
         let mut file_content = String::new();
         if let Err(_) = file.read_to_string(&mut file_content) {
             return HttpResponse::new(http::StatusCode::NOT_FOUND);
         }
-        let html : String = markdown::to_html(&file_content);
+        let html = render_template(
+            "post",
+            &markdown::to_html(&file_content)).unwrap_or("Template error".to_string());
         HttpResponse::Ok().body(html)
     } else {
         return HttpResponse::new(http::StatusCode::NOT_FOUND);
