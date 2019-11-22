@@ -21,7 +21,8 @@ fn post(info: web::Path<(String)>) -> impl Responder {
         if let Err(_) = file.read_to_string(&mut file_content) {
             return HttpResponse::new(http::StatusCode::NOT_FOUND);
         }
-        HttpResponse::Ok().body(file_content)
+        let html : String = markdown::to_html(&file_content);
+        HttpResponse::Ok().body(html)
     } else {
         return HttpResponse::new(http::StatusCode::NOT_FOUND);
     }
