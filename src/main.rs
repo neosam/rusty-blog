@@ -15,7 +15,7 @@ fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
 
 #[get("/post/{name}.html")]
 fn post(info: web::Path<(String)>) -> impl Responder {
-    let filename = format!("{}.md", info.as_ref());
+    let filename = format!("post/{}.md", info.as_ref());
     if let Ok(mut file) = File::open(filename) {
         let mut file_content = String::new();
         if let Err(_) = file.read_to_string(&mut file_content) {
