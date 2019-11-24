@@ -5,10 +5,23 @@ use std::io::Read;
 use tinytemplate::TinyTemplate;
 use serde::Serialize;
 use std::collections::HashMap;
+use log::{info, debug, error};
 
+#[derive(Serialize)]
 struct ParsedDocument {
     header: HashMap<String, String>,
     body: String,
+}
+
+#[derive(Serialize)]
+struct ListContent<'a> {
+    posts: &'a Vec<ParsedDocument>,
+    context: &'a HashMap<String, String>,
+}
+impl<'a> ListContent<'a> {
+    fn new(posts: &'a Vec<ParsedDocument>, context: &'a HashMap<String, String>) -> ListContent<'a> {
+        ListContent { posts, context }
+    }
 }
 
 #[derive(Debug)]
@@ -65,21 +78,32 @@ fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     })
 }
 
-fn render_template(filename: &str, text: &str, context: &HashMap<String, String>) -> std::io::Result<String> {
+fn render_template(filename: &str, text: &str, context: &HashMap<String, String>) -> BlogResult<String> {
     let mut template_text = String::new();
     File::open(format!("templates/{}.html", filename))?
         .read_to_string(&mut template_text)?;
     
     let mut tt = TinyTemplate::new();
-    tt.add_template("main", &template_text);
+    tt.add_template("main", &template_text)?;
 
     let mut inner_context = context.clone();
     inner_context.insert("main".to_string(), text.to_string());
     
     Ok(tt.render("main", &inner_context).unwrap())
 }
+fn render_list_template(filename: &str, content: &Vec<ParsedDocument>, context: &HashMap<String, String>) -> BlogResult<String> {
+    let mut template_text = String::new();
+    File::open(format!("templates/{}.html", filename))?
+        .read_to_string(&mut template_text)?;
+    
+    let mut tt = TinyTemplate::new();
+    tt.add_template("list", &template_text)?;
+    
+    Ok(tt.render("list", &ListContent::new(content, context))?)
+}
 
 fn read_file_to_string(path: String) -> BlogResult<String> {
+    debug!("Opening file '{}'", path);
     let mut file_content = String::new();
     File::open(path)?.read_to_string(&mut file_content)?;
     Ok(file_content)
@@ -88,7 +112,10 @@ fn read_file_to_string(path: String) -> BlogResult<String> {
 fn respond(content: BlogResult<impl ToString>) -> impl Responder {
     match content {
         Ok(result) => HttpResponse::Ok().body(result.to_string()),
-        Err(_err) => HttpResponse::new(http::StatusCode::NOT_FOUND)
+        Err(err) => {
+            error!("Response error: {}", err);
+            HttpResponse::new(http::StatusCode::NOT_FOUND)
+        }
     }
 }
 
@@ -97,6 +124,26 @@ fn get_post(filename: String) -> BlogResult<String> {
     let parsed_document = parse_header(&file_content)?;
     let html_content = &markdown::to_html(&parsed_document.body);
     let html = render_template("post", html_content, &parsed_document.header)?;
+    Ok(html)
+}
+
+fn get_list(filename: String) -> BlogResult<String> {
+    let list_file_content = read_file_to_string(filename)?;
+    let parsed_list = parse_header(&list_file_content)?;
+    let mut posts = Vec::new();
+    for post in parsed_list.body.lines() {
+        if post.trim() == "" {
+            continue;
+        }
+        let post_filename = format!("posts/{}.md", post.trim());
+        let post_content = read_file_to_string(post_filename)?;
+        
+        let mut parsed_document = parse_header(&post_content)?;
+        let body_as_html = markdown::to_html(&parsed_document.body);
+        parsed_document.body = body_as_html;
+        posts.push(parsed_document);
+    }
+    let html = render_list_template("list", &posts, &parsed_list.header)?;
     Ok(html)
 }
 
@@ -117,18 +164,28 @@ fn static_files(info: web::Path<String>) -> impl Responder {
 }
 
 #[get("/post/{name}.html")]
-fn post(info: web::Path<(String)>) -> impl Responder {
+fn post_controller(info: web::Path<(String)>) -> impl Responder {
     let filename = format!("posts/{}.md", *info);
     respond(get_post(filename))
 }
 
+#[get("/list/{name}.html")]
+fn list_controller(info: web::Path<(String)>) -> impl Responder {
+    let filename = format!("lists/{}.txt", *info);
+    respond(get_list(filename))
+}
+
 fn main() -> std::io::Result<()> {
+    env_logger::init();
+    info!("Starting up, listening on port 8080");
     HttpServer::new(
         || App::new()
             .service(advanced_index)
             .service(index)
-            .service(post)
+            .service(post_controller)
+            .service(list_controller)
             .service(static_files))
-        .bind("127.0.0.1:8080")?
+        .bind("0.0.0.0:8080")?
         .run()
 }
+
