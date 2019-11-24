@@ -149,7 +149,7 @@ fn get_list(filename: String) -> BlogResult<String> {
 
 #[get("/")]
 fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello world")
+    respond(get_list("lists/main.txt".to_string()))
 }
 
 #[get("/{id}/{name}/index.html")]
