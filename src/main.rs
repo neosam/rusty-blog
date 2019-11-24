@@ -3,9 +3,11 @@ use actix_web::get;
 use std::fs::File;
 use std::io::Read;
 use tinytemplate::TinyTemplate;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use log::{info, debug, error};
+use lazy_static::lazy_static;
+use std::sync::RwLock;
 
 #[derive(Serialize)]
 struct ParsedDocument {
@@ -32,10 +34,50 @@ impl std::fmt::Display for ParseError {
     }
 }
 impl std::error::Error for ParseError {
-
 }
 
 type BlogResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+#[derive(Serialize, Deserialize)]
+struct Config {
+    hostname: String,
+    port: u32,
+    doc_path: String,
+    context: String,
+}
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            hostname: "127.0.0.1".to_string(),
+            port: 8080,
+            doc_path: "./".to_string(),
+            context: "".to_string(),
+        }
+    }
+}
+
+lazy_static! {
+    static ref BLOG_CONFIG: RwLock<Config> = RwLock::new(
+        if let Ok(file) = File::open("config.yml") {
+            serde_yaml::from_reader(&file).unwrap_or_default()
+        } else {
+            Config::default()
+        }
+    );
+}
+fn get_hostname() -> String {
+    BLOG_CONFIG.read().unwrap().hostname.clone()
+}
+fn get_port() -> u32 {
+    BLOG_CONFIG.read().unwrap().port
+}
+fn get_doc_path() -> String {
+    BLOG_CONFIG.read().unwrap().doc_path.clone()
+}
+fn get_context() -> String {
+    BLOG_CONFIG.read().unwrap().context.clone()
+}
+
 
 fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     let mut header = HashMap::new();
@@ -79,27 +121,27 @@ fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
 }
 
 fn render_template(filename: &str, text: &str, context: &HashMap<String, String>) -> BlogResult<String> {
-    let mut template_text = String::new();
-    File::open(format!("templates/{}.html", filename))?
-        .read_to_string(&mut template_text)?;
+    let template_text = read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
     
     let mut tt = TinyTemplate::new();
     tt.add_template("main", &template_text)?;
 
     let mut inner_context = context.clone();
     inner_context.insert("main".to_string(), text.to_string());
+    inner_context.insert("ctxt".to_string(), get_context());
     
     Ok(tt.render("main", &inner_context).unwrap())
 }
 fn render_list_template(filename: &str, content: &Vec<ParsedDocument>, context: &HashMap<String, String>) -> BlogResult<String> {
-    let mut template_text = String::new();
-    File::open(format!("templates/{}.html", filename))?
-        .read_to_string(&mut template_text)?;
+    let template_text = read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
     
     let mut tt = TinyTemplate::new();
     tt.add_template("list", &template_text)?;
+
+    let mut inner_context = context.clone();
+    inner_context.insert("ctxt".to_string(), get_context());
     
-    Ok(tt.render("list", &ListContent::new(content, context))?)
+    Ok(tt.render("list", &ListContent::new(content, &inner_context))?)
 }
 
 fn read_file_to_string(path: String) -> BlogResult<String> {
@@ -135,12 +177,13 @@ fn get_list(filename: String) -> BlogResult<String> {
         if post.trim() == "" {
             continue;
         }
-        let post_filename = format!("posts/{}.md", post.trim());
+        let post_filename = format!("{}/posts/{}.md", get_doc_path(), post.trim());
         let post_content = read_file_to_string(post_filename)?;
         
         let mut parsed_document = parse_header(&post_content)?;
         let body_as_html = markdown::to_html(&parsed_document.body);
         parsed_document.body = body_as_html;
+        parsed_document.header.insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
     let html = render_list_template("list", &posts, &parsed_list.header)?;
@@ -149,7 +192,7 @@ fn get_list(filename: String) -> BlogResult<String> {
 
 #[get("/")]
 fn index() -> impl Responder {
-    respond(get_list("lists/main.txt".to_string()))
+    respond(get_list(format!("{}/lists/main.txt", get_doc_path())))
 }
 
 #[get("/{id}/{name}/index.html")]
@@ -159,25 +202,28 @@ fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
 
 #[get("/static/{name}")]
 fn static_files(info: web::Path<String>) -> impl Responder {
-    let filename = format!("static/{}", info.as_ref());
+    let filename = format!("{}/static/{}", get_doc_path(), info.as_ref());
     respond(read_file_to_string(filename))
 }
 
 #[get("/post/{name}.html")]
 fn post_controller(info: web::Path<(String)>) -> impl Responder {
-    let filename = format!("posts/{}.md", *info);
+    let filename = format!("{}/posts/{}.md", get_doc_path(), *info);
     respond(get_post(filename))
 }
 
 #[get("/list/{name}.html")]
 fn list_controller(info: web::Path<(String)>) -> impl Responder {
-    let filename = format!("lists/{}.txt", *info);
+    let filename = format!("{}/lists/{}.txt", get_doc_path(), *info);
     respond(get_list(filename))
 }
 
 fn main() -> std::io::Result<()> {
     env_logger::init();
-    info!("Starting up, listening on port 8080");
+    
+    let hostname = get_hostname();
+    let port = get_port();
+    info!("Starting up, listening on {}:{}", hostname, port);
     HttpServer::new(
         || App::new()
             .service(advanced_index)
@@ -185,7 +231,7 @@ fn main() -> std::io::Result<()> {
             .service(post_controller)
             .service(list_controller)
             .service(static_files))
-        .bind("0.0.0.0:8080")?
+        .bind(format!("{}:{}", hostname, port))?
         .run()
 }
 
