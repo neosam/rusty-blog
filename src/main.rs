@@ -22,7 +22,9 @@ impl std::error::Error for ParseError {
 
 }
 
-fn parse_header(content: &str) -> Result<ParsedDocument, Box<dyn std::error::Error>> {
+type BlogResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     let mut header = HashMap::new();
     let mut body = String::new();
 
@@ -63,11 +65,6 @@ fn parse_header(content: &str) -> Result<ParsedDocument, Box<dyn std::error::Err
     })
 }
 
-#[derive(Serialize)]
-struct Context {
-    main: String
-}
-
 fn render_template(filename: &str, text: &str, context: &HashMap<String, String>) -> std::io::Result<String> {
     let mut template_text = String::new();
     File::open(format!("templates/{}.html", filename))?
@@ -80,6 +77,27 @@ fn render_template(filename: &str, text: &str, context: &HashMap<String, String>
     inner_context.insert("main".to_string(), text.to_string());
     
     Ok(tt.render("main", &inner_context).unwrap())
+}
+
+fn read_file_to_string(path: String) -> BlogResult<String> {
+    let mut file_content = String::new();
+    File::open(path)?.read_to_string(&mut file_content)?;
+    Ok(file_content)
+}
+
+fn respond(content: BlogResult<impl ToString>) -> impl Responder {
+    match content {
+        Ok(result) => HttpResponse::Ok().body(result.to_string()),
+        Err(_err) => HttpResponse::new(http::StatusCode::NOT_FOUND)
+    }
+}
+
+fn get_post(filename: String) -> BlogResult<String> {
+    let file_content = read_file_to_string(filename)?;
+    let parsed_document = parse_header(&file_content)?;
+    let html_content = &markdown::to_html(&parsed_document.body);
+    let html = render_template("post", html_content, &parsed_document.header)?;
+    Ok(html)
 }
 
 #[get("/")]
@@ -95,34 +113,13 @@ fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
 #[get("/static/{name}")]
 fn static_files(info: web::Path<String>) -> impl Responder {
     let filename = format!("static/{}", info.as_ref());
-    if let Ok(mut file) = File::open(filename) {
-        let mut file_content = String::new();
-        if let Err(_) = file.read_to_string(&mut file_content) {
-            return HttpResponse::new(http::StatusCode::NOT_FOUND);
-        }
-        HttpResponse::Ok().body(file_content)
-    } else {
-        return HttpResponse::new(http::StatusCode::NOT_FOUND);
-    }
+    respond(read_file_to_string(filename))
 }
 
 #[get("/post/{name}.html")]
 fn post(info: web::Path<(String)>) -> impl Responder {
-    let filename = format!("posts/{}.md", info.as_ref());
-    if let Ok(mut file) = File::open(filename) {
-        let mut file_content = String::new();
-        if let Err(_) = file.read_to_string(&mut file_content) {
-            return HttpResponse::new(http::StatusCode::NOT_FOUND);
-        }
-        let parsed_document = parse_header(&file_content).unwrap();
-        let html = render_template(
-            "post",
-            &markdown::to_html(&parsed_document.body),
-            &parsed_document.header).unwrap_or("Template error".to_string());
-        HttpResponse::Ok().body(html)
-    } else {
-        return HttpResponse::new(http::StatusCode::NOT_FOUND);
-    }
+    let filename = format!("posts/{}.md", *info);
+    respond(get_post(filename))
 }
 
 fn main() -> std::io::Result<()> {
