@@ -1,13 +1,13 @@
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, http};
 use actix_web::get;
+use actix_web::{http, web, App, HttpResponse, HttpServer, Responder};
+use lazy_static::lazy_static;
+use log::{debug, error, info};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use tinytemplate::TinyTemplate;
-use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
-use log::{info, debug, error};
-use lazy_static::lazy_static;
 use std::sync::RwLock;
+use tinytemplate::TinyTemplate;
 
 #[derive(Serialize)]
 struct ParsedDocument {
@@ -21,7 +21,10 @@ struct ListContent<'a> {
     context: &'a HashMap<String, String>,
 }
 impl<'a> ListContent<'a> {
-    fn new(posts: &'a Vec<ParsedDocument>, context: &'a HashMap<String, String>) -> ListContent<'a> {
+    fn new(
+        posts: &'a Vec<ParsedDocument>,
+        context: &'a HashMap<String, String>,
+    ) -> ListContent<'a> {
         ListContent { posts, context }
     }
 }
@@ -33,8 +36,7 @@ impl std::fmt::Display for ParseError {
         write!(f, "Parse error: {}", self.0)
     }
 }
-impl std::error::Error for ParseError {
-}
+impl std::error::Error for ParseError {}
 
 type BlogResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -57,13 +59,12 @@ impl Default for Config {
 }
 
 lazy_static! {
-    static ref BLOG_CONFIG: RwLock<Config> = RwLock::new(
-        if let Ok(file) = File::open("config.yml") {
+    static ref BLOG_CONFIG: RwLock<Config> =
+        RwLock::new(if let Ok(file) = File::open("config.yml") {
             serde_yaml::from_reader(&file).unwrap_or_default()
         } else {
             Config::default()
-        }
-    );
+        });
 }
 fn get_hostname() -> String {
     BLOG_CONFIG.read().unwrap().hostname.clone()
@@ -77,7 +78,6 @@ fn get_doc_path() -> String {
 fn get_context() -> String {
     BLOG_CONFIG.read().unwrap().context.clone()
 }
-
 
 fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     let mut header = HashMap::new();
@@ -102,11 +102,13 @@ fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
             if let (Some(key), Some(value)) = (key, value) {
                 header.insert(key.to_string(), value.to_string());
             } else {
-                return Err(Box::new(ParseError("Key/Value is not properly defined".to_string())));
+                return Err(Box::new(ParseError(
+                    "Key/Value is not properly defined".to_string(),
+                )));
             }
         } else {
             return Err(Box::new(ParseError("Header is never closed".to_string())));
-        }        
+        }
         line_opt = lines.next();
     }
     for line in lines {
@@ -114,33 +116,40 @@ fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
         body.push('\n');
     }
 
-    Ok(ParsedDocument {
-        header,
-        body,
-    })
+    Ok(ParsedDocument { header, body })
 }
 
-fn render_template(filename: &str, text: &str, context: &HashMap<String, String>) -> BlogResult<String> {
-    let template_text = read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
-    
+fn render_template(
+    filename: &str,
+    text: &str,
+    context: &HashMap<String, String>,
+) -> BlogResult<String> {
+    let template_text =
+        read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
+
     let mut tt = TinyTemplate::new();
     tt.add_template("main", &template_text)?;
 
     let mut inner_context = context.clone();
     inner_context.insert("main".to_string(), text.to_string());
     inner_context.insert("ctxt".to_string(), get_context());
-    
+
     Ok(tt.render("main", &inner_context).unwrap())
 }
-fn render_list_template(filename: &str, content: &Vec<ParsedDocument>, context: &HashMap<String, String>) -> BlogResult<String> {
-    let template_text = read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
-    
+fn render_list_template(
+    filename: &str,
+    content: &Vec<ParsedDocument>,
+    context: &HashMap<String, String>,
+) -> BlogResult<String> {
+    let template_text =
+        read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
+
     let mut tt = TinyTemplate::new();
     tt.add_template("list", &template_text)?;
 
     let mut inner_context = context.clone();
     inner_context.insert("ctxt".to_string(), get_context());
-    
+
     Ok(tt.render("list", &ListContent::new(content, &inner_context))?)
 }
 
@@ -179,11 +188,13 @@ fn get_list(filename: String) -> BlogResult<String> {
         }
         let post_filename = format!("{}/posts/{}.md", get_doc_path(), post.trim());
         let post_content = read_file_to_string(post_filename)?;
-        
+
         let mut parsed_document = parse_header(&post_content)?;
         let body_as_html = markdown::to_html(&parsed_document.body);
         parsed_document.body = body_as_html;
-        parsed_document.header.insert("id".to_string(), post.trim().to_string());
+        parsed_document
+            .header
+            .insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
     let html = render_list_template("list", &posts, &parsed_list.header)?;
@@ -220,18 +231,18 @@ fn list_controller(info: web::Path<(String)>) -> impl Responder {
 
 fn main() -> std::io::Result<()> {
     env_logger::init();
-    
+
     let hostname = get_hostname();
     let port = get_port();
     info!("Starting up, listening on {}:{}", hostname, port);
-    HttpServer::new(
-        || App::new()
+    HttpServer::new(|| {
+        App::new()
             .service(advanced_index)
             .service(index)
             .service(post_controller)
             .service(list_controller)
-            .service(static_files))
-        .bind(format!("{}:{}", hostname, port))?
-        .run()
+            .service(static_files)
+    })
+    .bind(format!("{}:{}", hostname, port))?
+    .run()
 }
-
