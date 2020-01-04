@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use handlebars::Handlebars;
+use crate::serverstate::ServerState;
 
 use crate::error::*;
 use crate::config::*;
@@ -92,25 +93,26 @@ pub fn render_list_template(
     Ok(reg.render(name, &ListContent::new(content, &inner_context))?)
 }
 
-pub fn read_file_to_string(path: String) -> BlogResult<String> {
+pub fn read_file_to_string(path: &str) -> BlogResult<String> {
     debug!("Opening file '{}'", path);
     let mut file_content = String::new();
-    File::open(path)?.read_to_string(&mut file_content)?;
+    File::open(&path)?.read_to_string(&mut file_content)?;
+    debug!("File '{}' reding done", path);
     Ok(file_content)
 }
 
 
 
-pub fn get_post(reg: &Handlebars, filename: String) -> BlogResult<String> {
-    let file_content = read_file_to_string(filename)?;
+pub fn get_post(state: &ServerState, filename: String) -> BlogResult<String> {
+    let file_content = read_file_to_string(&filename)?;
     let parsed_document = parse_header(&file_content)?;
-    let html_content = &markdown::to_html(&parsed_document.body);
-    let html = render_template(reg, "post", html_content, &parsed_document.header)?;
+    let html_content = state.md_cache.get_or_insert(&filename, || markdown::to_html(&parsed_document.body));
+    let html = render_template(&state.reg, "post", &html_content, &parsed_document.header)?;
     Ok(html)
 }
 
-pub fn get_list(reg: &Handlebars, filename: String) -> BlogResult<String> {
-    let list_file_content = read_file_to_string(filename)?;
+pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
+    let list_file_content = read_file_to_string(&filename)?;
     let parsed_list = parse_header(&list_file_content)?;
     let mut posts = Vec::new();
     for post in parsed_list.body.lines() {
@@ -118,16 +120,18 @@ pub fn get_list(reg: &Handlebars, filename: String) -> BlogResult<String> {
             continue;
         }
         let post_filename = format!("{}/posts/{}.md", get_doc_path(), post.trim());
-        let post_content = read_file_to_string(post_filename)?;
+        let post_content = read_file_to_string(&post_filename.clone())?;
 
         let mut parsed_document = parse_header(&post_content)?;
-        let body_as_html = markdown::to_html(&parsed_document.body);
-        parsed_document.body = body_as_html;
+        debug!("Convert markdown to html");
+        let body_as_html = state.md_cache.get_or_insert(&post_filename, || markdown::to_html(&parsed_document.body));
+        debug!("Conversion markdown to html done");
+        parsed_document.body = body_as_html.to_string();
         parsed_document
             .header
             .insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
-    let html = render_list_template(reg, "list", &posts, &parsed_list.header)?;
+    let html = render_list_template(&state.reg, "list", &posts, &parsed_list.header)?;
     Ok(html)
 }
