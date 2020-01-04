@@ -3,7 +3,7 @@ use serde::{Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use tinytemplate::TinyTemplate;
+use handlebars::Handlebars;
 
 use crate::error::*;
 use crate::config::*;
@@ -69,37 +69,27 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
 }
 
 pub fn render_template(
-    filename: &str,
+    reg: &Handlebars,
+    name: &str,
     text: &str,
     context: &HashMap<String, String>,
 ) -> BlogResult<String> {
-    let template_text =
-        read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
-
-    let mut tt = TinyTemplate::new();
-    tt.add_template("main", &template_text)?;
-
     let mut inner_context = context.clone();
     inner_context.insert("main".to_string(), text.to_string());
     inner_context.insert("ctxt".to_string(), get_context());
 
-    Ok(tt.render("main", &inner_context).unwrap())
+    Ok(reg.render(name, &inner_context).unwrap())
 }
 pub fn render_list_template(
-    filename: &str,
+    reg: &Handlebars,
+    name: &str,
     content: &Vec<ParsedDocument>,
     context: &HashMap<String, String>,
 ) -> BlogResult<String> {
-    let template_text =
-        read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), filename))?;
-
-    let mut tt = TinyTemplate::new();
-    tt.add_template("list", &template_text)?;
-
     let mut inner_context = context.clone();
     inner_context.insert("ctxt".to_string(), get_context());
 
-    Ok(tt.render("list", &ListContent::new(content, &inner_context))?)
+    Ok(reg.render(name, &ListContent::new(content, &inner_context))?)
 }
 
 pub fn read_file_to_string(path: String) -> BlogResult<String> {
@@ -111,15 +101,15 @@ pub fn read_file_to_string(path: String) -> BlogResult<String> {
 
 
 
-pub fn get_post(filename: String) -> BlogResult<String> {
+pub fn get_post(reg: &Handlebars, filename: String) -> BlogResult<String> {
     let file_content = read_file_to_string(filename)?;
     let parsed_document = parse_header(&file_content)?;
     let html_content = &markdown::to_html(&parsed_document.body);
-    let html = render_template("post", html_content, &parsed_document.header)?;
+    let html = render_template(reg, "post", html_content, &parsed_document.header)?;
     Ok(html)
 }
 
-pub fn get_list(filename: String) -> BlogResult<String> {
+pub fn get_list(reg: &Handlebars, filename: String) -> BlogResult<String> {
     let list_file_content = read_file_to_string(filename)?;
     let parsed_list = parse_header(&list_file_content)?;
     let mut posts = Vec::new();
@@ -138,6 +128,6 @@ pub fn get_list(filename: String) -> BlogResult<String> {
             .insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
-    let html = render_list_template("list", &posts, &parsed_list.header)?;
+    let html = render_list_template(reg, "list", &posts, &parsed_list.header)?;
     Ok(html)
 }

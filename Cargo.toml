@@ -7,9 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "1.0"
+actix-web = "2.0"
+actix-rt = "1.0"
 markdown = "0.2"
-tinytemplate = "1.0"
+handlebars = "2.0"
 serde = "1.0"
 serde_yaml = "0.8"
 log = "0.4"

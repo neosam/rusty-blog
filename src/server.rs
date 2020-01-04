@@ -3,13 +3,17 @@ use log::{info};
 
 use crate::config::*;
 use crate::servicemappings::*;
+use crate::template::init_templates;
+use crate::error::*;
 
-pub fn run() -> std::io::Result<()> {
+pub async fn run() -> BlogResult<()> {
     let hostname = get_hostname();
     let port = get_port();
     info!("Starting up, listening on {}:{}", hostname, port);
     HttpServer::new(|| {
+        let templates = init_templates().unwrap();
         App::new()
+            .data(templates)
             .service(advanced_index)
             .service(index)
             .service(post_controller)
@@ -18,4 +22,6 @@ pub fn run() -> std::io::Result<()> {
     })
     .bind(format!("{}:{}", hostname, port))?
     .run()
+    .await?;
+    Ok(())
 }

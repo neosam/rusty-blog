@@ -1,6 +1,7 @@
 use actix_web::get;
 use actix_web::{http, web, HttpResponse, Responder};
-use log::{error};
+use log::{error, debug};
+use handlebars::Handlebars;
 
 use crate::error::*;
 use crate::config::*;
@@ -17,29 +18,32 @@ fn respond(content: BlogResult<impl ToString>) -> impl Responder {
 }
 
 #[get("/")]
-pub fn index() -> impl Responder {
-    respond(get_list(format!("{}/lists/main.txt", get_doc_path())))
+pub async fn index(reg: web::Data<Handlebars>) -> impl Responder {
+    respond(get_list(&reg, format!("{}/lists/main.txt", get_doc_path())))
 }
 
 #[get("/{id}/{name}/index.html")]
-pub fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
+pub async fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
     format!("Hello {}! id: {}", info.1, info.0)
 }
 
 #[get("/static/{name}")]
-pub fn static_files(info: web::Path<String>) -> impl Responder {
+pub async fn static_files(info: web::Path<String>) -> impl Responder {
     let filename = format!("{}/static/{}", get_doc_path(), info.as_ref());
     respond(read_file_to_string(filename))
 }
 
 #[get("/post/{name}.html")]
-pub fn post_controller(info: web::Path<(String)>) -> impl Responder {
+pub async fn post_controller(info: web::Path<String>, reg: web::Data<Handlebars>) -> impl Responder {
+    debug!("start post '{}'", info);
     let filename = format!("{}/posts/{}.md", get_doc_path(), *info);
-    respond(get_post(filename))
+    let result = respond(get_post(&reg, filename));
+    debug!("finished post '{}'", info);
+    result
 }
 
 #[get("/list/{name}.html")]
-pub fn list_controller(info: web::Path<(String)>) -> impl Responder {
+pub async fn list_controller(info: web::Path<String>, reg: web::Data<Handlebars>) -> impl Responder {
     let filename = format!("{}/lists/{}.txt", get_doc_path(), *info);
-    respond(get_list(filename))
+    respond(get_list(&reg, filename))
 }
