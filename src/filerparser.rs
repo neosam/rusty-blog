@@ -3,8 +3,10 @@ use serde::{Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::ops::DerefMut;
 use handlebars::Handlebars;
 use crate::serverstate::ServerState;
+use crate::template::setup_templates;
 
 use crate::error::*;
 use crate::config::*;
@@ -104,14 +106,20 @@ pub fn read_file_to_string(path: &str) -> BlogResult<String> {
 
 
 pub fn get_post(state: &ServerState, filename: String) -> BlogResult<String> {
+    if !get_caching() {
+        setup_templates(state.reg.write().unwrap().deref_mut())?;
+    }
     let file_content = read_file_to_string(&filename)?;
     let parsed_document = parse_header(&file_content)?;
     let html_content = state.md_cache.get_or_insert(&filename, || markdown::to_html(&parsed_document.body));
-    let html = render_template(&state.reg, "post", &html_content, &parsed_document.header)?;
+    let html = render_template(&state.reg.read().unwrap(), "post", &html_content, &parsed_document.header)?;
     Ok(html)
 }
 
 pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
+    if !get_caching() {
+        setup_templates(state.reg.write().unwrap().deref_mut())?;
+    }
     let list_file_content = read_file_to_string(&filename)?;
     let parsed_list = parse_header(&list_file_content)?;
     let mut posts = Vec::new();
@@ -132,6 +140,6 @@ pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
             .insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
-    let html = render_list_template(&state.reg, "list", &posts, &parsed_list.header)?;
+    let html = render_list_template(&state.reg.read().unwrap(), "list", &posts, &parsed_list.header)?;
     Ok(html)
 }

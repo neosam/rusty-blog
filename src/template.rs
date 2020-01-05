@@ -8,9 +8,14 @@ use crate::error::*;
 
 pub fn init_templates() -> BlogResult<Handlebars> {
     let mut reg = Handlebars::new();
-    load_template(&mut reg, "post")?;
-    load_template(&mut reg, "list")?;
+    setup_templates(&mut reg)?;
     Ok(reg)
+}
+
+pub fn setup_templates(reg: &mut Handlebars) -> BlogResult<()> {
+    load_template(reg, "post")?;
+    load_template(reg, "list")?;
+    Ok(())
 }
 
 fn load_template(reg: &mut Handlebars, name: impl ToString) -> BlogResult<()> {

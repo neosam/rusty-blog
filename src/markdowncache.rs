@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use log::debug;
+use crate::config::get_caching;
 
 pub struct MarkdownCache {
     cache: Arc<RwLock<HashMap<String, Arc<String>>>>
@@ -26,6 +27,9 @@ impl MarkdownCache {
     }
 
     pub fn get_or_insert(&self, name: &str, load_fn: impl FnOnce() -> String) -> Arc<String> {
+        if !get_caching() {
+            return Arc::new(load_fn())
+        }
         if let Some(content) = self.get(name) {
             debug!("markdowncache: '{}' was in cache", name);
             content

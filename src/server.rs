@@ -1,6 +1,7 @@
 use actix_web::{App, HttpServer};
 use log::{info, debug};
 use std::sync::Arc;
+use std::sync::RwLock;
 
 use crate::config::*;
 use crate::servicemappings::*;
@@ -16,7 +17,7 @@ pub async fn run() -> BlogResult<()> {
     info!("Starting up, listening on {}:{}", hostname, port);
     HttpServer::new(move || {
         debug!("HttpServer new");
-        let templates = init_templates().unwrap();
+        let templates = RwLock::new(init_templates().unwrap());
         let serverstate = ServerState {
             reg: templates,
             md_cache: md_cache.clone(),

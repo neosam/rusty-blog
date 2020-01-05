@@ -72,3 +72,6 @@ pub fn get_doc_path() -> String {
 pub fn get_context() -> String {
     BLOG_CONFIG.read().unwrap().context.clone()
 }
+pub fn get_caching() -> bool {
+    BLOG_CONFIG.read().unwrap().caching
+}
