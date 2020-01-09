@@ -2,7 +2,6 @@ use actix_web::{App, HttpServer};
 use log::{info, debug};
 use std::sync::Arc;
 use std::sync::RwLock;
-use std::path::Path;
 
 use crate::config::*;
 use crate::servicemappings::*;

@@ -1,10 +1,8 @@
-use std::sync::{Arc};
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::io::{Read, Write};
 use std::fs::File;
 use log::debug;
-use crate::config::get_caching;
 
 pub struct MarkdownCache {
     work_dir: String,
@@ -15,7 +13,7 @@ impl MarkdownCache {
     pub fn new(path: impl ToString, md_dir: impl ToString) -> Self {
         let path = path.to_string();
         let md_dir = md_dir.to_string();
-        create_dir_all(Path::new(&path));
+        create_dir_all(Path::new(&path)).unwrap();
         MarkdownCache {
             work_dir: path,
             md_dir,
@@ -44,7 +42,7 @@ impl MarkdownCache {
         let name = name.to_string();
         let value = value.to_string();
         let file = self.gen_path(&name);
-        File::create(file).unwrap().write_all(value.as_bytes());
+        File::create(file).unwrap().write_all(value.as_bytes()).unwrap();
         value
     }
 
@@ -52,7 +50,7 @@ impl MarkdownCache {
         let file = self.gen_path(name);
         if file.exists() {
             let mut result = String::new();
-            File::open(file).unwrap().read_to_string(&mut result);
+            File::open(file).unwrap().read_to_string(&mut result).unwrap();
             Some(result)
         } else {
             None
