@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/neosam/rusty-blog.svg?branch=master)](https://travis-ci.com/neosam/rusty-blog)
+
 # rusty-blog
 A blog software which works with files only written in rust
 
