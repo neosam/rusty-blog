@@ -2,6 +2,7 @@ use actix_web::{App, HttpServer};
 use log::{info, debug};
 use std::sync::Arc;
 use std::sync::RwLock;
+use std::path::Path;
 
 use crate::config::*;
 use crate::servicemappings::*;
@@ -13,7 +14,11 @@ use crate::serverstate::ServerState;
 pub async fn run() -> BlogResult<()> {
     let hostname = get_hostname();
     let port = get_port();
-    let md_cache = Arc::new(MarkdownCache::new());
+    let doc_path = get_doc_path();
+    debug!("doc path: {}", &doc_path);
+    let md_cache = Arc::new(MarkdownCache::new(
+        format!("{}/work/md-cache/", &doc_path),
+        format!("{}/posts/", &doc_path)));
     info!("Starting up, listening on {}:{}", hostname, port);
     HttpServer::new(move || {
         debug!("HttpServer new");

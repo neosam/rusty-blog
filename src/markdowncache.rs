@@ -1,62 +1,72 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
+use std::fs::create_dir_all;
+use std::path::{Path, PathBuf};
+use std::io::{Read, Write};
+use std::fs::File;
 use log::debug;
 use crate::config::get_caching;
 
 pub struct MarkdownCache {
-    cache: Arc<RwLock<HashMap<String, Arc<String>>>>
+    work_dir: String,
+    md_dir: String,
 }
 
 impl MarkdownCache {
-    pub fn new() -> Self {
+    pub fn new(path: impl ToString, md_dir: impl ToString) -> Self {
+        let path = path.to_string();
+        let md_dir = md_dir.to_string();
+        create_dir_all(Path::new(&path));
         MarkdownCache {
-            cache: Arc::new(RwLock::new(HashMap::new()))
+            work_dir: path,
+            md_dir,
         }
     }
 
-    pub fn set(&self, name: impl ToString, value: impl ToString) -> Arc<String> {
-        let value = Arc::new(value.to_string());
-        self.cache.write().unwrap().insert(name.to_string(), value.clone());
-        debug!("markdowncache: '{}' inserted", name.to_string());
+    fn gen_path(&self, name: &str) -> PathBuf {
+        let path = Path::new(&self.work_dir);
+        debug!("Path: {}", &path.to_str().unwrap());
+        let name = name.to_string();
+        debug!("Name: {}", name);
+        let file = path.join(&name).with_extension("html");
+        debug!("Generate cache file: {}", file.to_str().unwrap());
+        file
+    }
+
+    fn gen_md_path(&self, name: &str) -> PathBuf {
+        let path = Path::new(&self.md_dir);
+        let name = name.to_string();
+        let file = path.join(&name).with_extension("md");
+        debug!("Generate md path: {}", file.to_str().unwrap());
+        file
+    }
+
+    pub fn set(&self, name: impl ToString, value: impl ToString) -> String {
+        let name = name.to_string();
+        let value = value.to_string();
+        let file = self.gen_path(&name);
+        File::create(file).unwrap().write_all(value.as_bytes());
         value
     }
 
-    pub fn get(&self, name: &str) -> Option<Arc<String>> {
-        debug!("markdowncache: cachesize is {}", self.cache.read().unwrap().len());
-        self.cache.read().unwrap().get(name).map(|x| x.clone())
+    pub fn get(&self, name: &str) -> Option<String> {
+        let file = self.gen_path(name);
+        if file.exists() {
+            let mut result = String::new();
+            File::open(file).unwrap().read_to_string(&mut result);
+            Some(result)
+        } else {
+            None
+        }
     }
 
-    pub fn get_or_insert(&self, name: &str, load_fn: impl FnOnce() -> String) -> Arc<String> {
-        if !get_caching() {
-            return Arc::new(load_fn())
-        }
-        if let Some(content) = self.get(name) {
-            debug!("markdowncache: '{}' was in cache", name);
-            content
+    pub fn get_or_insert(&self, name: &str, load_fn: impl FnOnce() -> String) -> String {
+        let file = self.gen_path(name);
+        let md_file = self.gen_md_path(name);
+        if file.exists() 
+                && file.metadata().unwrap().modified().unwrap() > md_file.metadata().unwrap().modified().unwrap() {
+            self.get(name).unwrap()
         } else {
-            debug!("markdowncache: '{}' was not in cache - loading, caching and returning", name);
             self.set(name, load_fn())
         }
     }
-}
-
-#[test]
-fn test_markdown() {
-    let mut x = 0;
-    let string_generator = || {
-        x += 1;
-        "example text".to_string()
-    };
-
-    let mc = MarkdownCache::new();
-    let text = mc.get_or_insert("test", string_generator);
-
-    let string_generator = || {
-        x += 1;
-        "example text".to_string()
-    };
-    let text2 = mc.get_or_insert("test", string_generator);
-    assert_eq!(1, x);
-    assert_eq!("example text", &*text);
-    assert_eq!("example text", &*text2)
 }

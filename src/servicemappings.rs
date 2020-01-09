@@ -37,7 +37,7 @@ pub async fn static_files(info: web::Path<String>) -> impl Responder {
 pub async fn post_controller(info: web::Path<String>, reg: web::Data<ServerState>) -> impl Responder {
     debug!("start post '{}'", info);
     let filename = format!("{}/posts/{}.md", get_doc_path(), *info);
-    let result = respond(get_post(&reg, filename));
+    let result = respond(get_post(&reg, filename, &*info));
     debug!("finished post '{}'", info);
     result
 }

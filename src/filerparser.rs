@@ -105,13 +105,14 @@ pub fn read_file_to_string(path: &str) -> BlogResult<String> {
 
 
 
-pub fn get_post(state: &ServerState, filename: String) -> BlogResult<String> {
+pub fn get_post(state: &ServerState, filename: String, name: impl ToString) -> BlogResult<String> {
+    let name = name.to_string();
     if !get_caching() {
         setup_templates(state.reg.write().unwrap().deref_mut())?;
     }
     let file_content = read_file_to_string(&filename)?;
     let parsed_document = parse_header(&file_content)?;
-    let html_content = state.md_cache.get_or_insert(&filename, || markdown::to_html(&parsed_document.body));
+    let html_content = state.md_cache.get_or_insert(&name, || markdown::to_html(&parsed_document.body));
     let html = render_template(&state.reg.read().unwrap(), "post", &html_content, &parsed_document.header)?;
     Ok(html)
 }
@@ -132,7 +133,7 @@ pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
 
         let mut parsed_document = parse_header(&post_content)?;
         debug!("Convert markdown to html");
-        let body_as_html = state.md_cache.get_or_insert(&post_filename, || markdown::to_html(&parsed_document.body));
+        let body_as_html = state.md_cache.get_or_insert(&post.trim(), || markdown::to_html(&parsed_document.body));
         debug!("Conversion markdown to html done");
         parsed_document.body = body_as_html.to_string();
         parsed_document
