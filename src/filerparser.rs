@@ -1,3 +1,5 @@
+//! Contains utilities for parsing markdown and generate html output.
+
 use log::{debug};
 use serde::{Serialize};
 use std::collections::HashMap;
@@ -11,9 +13,15 @@ use crate::template::setup_templates;
 use crate::error::*;
 use crate::config::*;
 
+/// Contains the content of a blog entry
+/// 
+/// A blog entry has key/value pairs as header and a String as body.
 #[derive(Serialize)]
 pub struct ParsedDocument {
+    /// Key/value pairs for the header
     header: HashMap<String, String>,
+
+    /// The content of the entry
     body: String,
 }
 
@@ -31,6 +39,11 @@ impl<'a> ListContent<'a> {
     }
 }
 
+/// Parse a blog entry
+/// 
+/// The blog entry should start with a line which only contains ---.  The next
+/// lines are key/value pairs separated by a colon.  The header is terminated
+/// by another thre dashes.  The rest until EOF is the body.
 pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     let mut header = HashMap::new();
     let mut body = String::new();
@@ -71,6 +84,11 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     Ok(ParsedDocument { header, body })
 }
 
+/// Renders a blog post
+/// 
+/// It requires the Handlebars template content, the template name, the text
+/// to pass as main area to the template and additional values to pass to the
+/// template.
 pub fn render_template(
     reg: &Handlebars,
     name: &str,
@@ -83,6 +101,11 @@ pub fn render_template(
 
     Ok(reg.render(name, &inner_context).unwrap())
 }
+
+/// Renders a list page
+/// 
+/// It requires the Handlebars template content, the name of the template,
+/// the ParsedDocuments to display in the list and key/value pairs.
 pub fn render_list_template(
     reg: &Handlebars,
     name: &str,
@@ -95,6 +118,7 @@ pub fn render_list_template(
     Ok(reg.render(name, &ListContent::new(content, &inner_context))?)
 }
 
+/// Open the file on the given path and return its content
 pub fn read_file_to_string(path: &str) -> BlogResult<String> {
     debug!("Opening file '{}'", path);
     let mut file_content = String::new();
@@ -104,7 +128,10 @@ pub fn read_file_to_string(path: &str) -> BlogResult<String> {
 }
 
 
-
+/// Return the full html code for a post
+/// 
+/// It requires the ServerState, a filename where the markdown lies and the
+/// name for this post for caching.
 pub fn get_post(state: &ServerState, filename: String, name: impl ToString) -> BlogResult<String> {
     let name = name.to_string();
     if !get_caching() {
@@ -117,6 +144,9 @@ pub fn get_post(state: &ServerState, filename: String, name: impl ToString) -> B
     Ok(html)
 }
 
+/// Return the full html code for a list
+/// 
+/// It requires the ServerState and a filename where the list file lies.
 pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
     if !get_caching() {
         setup_templates(state.reg.write().unwrap().deref_mut())?;

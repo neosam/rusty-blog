@@ -1,3 +1,5 @@
+//! Return the servers
+
 use actix_web::{App, HttpServer};
 use log::{info, debug};
 use std::sync::Arc;
@@ -10,6 +12,7 @@ use crate::error::*;
 use crate::markdowncache::MarkdownCache;
 use crate::serverstate::ServerState;
 
+/// Run the server
 pub async fn run() -> BlogResult<()> {
     let hostname = get_hostname();
     let port = get_port();
