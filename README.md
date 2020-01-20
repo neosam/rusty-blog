@@ -5,7 +5,7 @@ A blog software which works with files only written in rust
 
 ## Pre-Alpha
 This software is basically just something I write to do some web development
-in Rust.  Maybe this will never really be stable at all - there are plenty of
+in Rust.  Maybe this will never really be stable at all - there is plenty of
 weblog software out there anyway.
 
 ## What it does
