@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 actix-web = "2.0"
 actix-rt = "1.0"
-markdown = "0.2"
+mdbook = "0.3"
 handlebars = "2.0"
 serde = "1.0"
 serde_yaml = "0.8"

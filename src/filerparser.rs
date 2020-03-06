@@ -9,6 +9,7 @@ use std::ops::DerefMut;
 use handlebars::Handlebars;
 use crate::serverstate::ServerState;
 use crate::template::setup_templates;
+use mdbook::utils::render_markdown;
 
 use crate::error::*;
 use crate::config::*;
@@ -139,7 +140,7 @@ pub fn get_post(state: &ServerState, filename: String, name: impl ToString) -> B
     }
     let file_content = read_file_to_string(&filename)?;
     let parsed_document = parse_header(&file_content)?;
-    let html_content = state.md_cache.get_or_insert(&name, || markdown::to_html(&parsed_document.body));
+    let html_content = state.md_cache.get_or_insert(&name, || render_markdown(&parsed_document.body, true));
     let html = render_template(&state.reg.read().unwrap(), "post", &html_content, &parsed_document.header)?;
     Ok(html)
 }
@@ -163,7 +164,7 @@ pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
 
         let mut parsed_document = parse_header(&post_content)?;
         debug!("Convert markdown to html");
-        let body_as_html = state.md_cache.get_or_insert(&post.trim(), || markdown::to_html(&parsed_document.body));
+        let body_as_html = state.md_cache.get_or_insert(&post.trim(), || render_markdown(&parsed_document.body, true));
         debug!("Conversion markdown to html done");
         parsed_document.body = body_as_html.to_string();
         parsed_document
