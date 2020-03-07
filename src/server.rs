@@ -14,9 +14,10 @@ use crate::serverstate::ServerState;
 
 /// Run the server
 pub async fn run() -> BlogResult<()> {
-    let hostname = get_hostname();
-    let port = get_port();
-    let doc_path = get_doc_path();
+    let config = Arc::new(Config::read("config.yml"));
+    let hostname = config.hostname.clone();
+    let port = config.port;
+    let doc_path = config.doc_path.clone();
     debug!("doc path: {}", &doc_path);
     let md_cache = Arc::new(MarkdownCache::new(
         format!("{}/work/md-cache/", &doc_path),
@@ -24,10 +25,11 @@ pub async fn run() -> BlogResult<()> {
     info!("Starting up, listening on {}:{}", hostname, port);
     HttpServer::new(move || {
         debug!("HttpServer new");
-        let templates = RwLock::new(init_templates().unwrap());
+        let templates = RwLock::new(init_templates(&config).unwrap());
         let serverstate = ServerState {
             reg: templates,
             md_cache: md_cache.clone(),
+            config: config.clone(),
         };
         App::new()
             .data(serverstate)

@@ -1,6 +1,5 @@
 //! Access data from the configuration file.
 
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::sync::RwLock;
@@ -32,7 +31,7 @@ fn default_caching() -> bool {
 }
 
 /// Contains the configuration for the application
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
     /// Hostname which is should be bound
     /// 
@@ -42,27 +41,27 @@ pub struct Config {
     /// 
     /// Use 0.0.0.0 to make the page accessable from the network / the internet.
     #[serde(default = "default_hostname")]
-    hostname: String,
+    pub hostname: String,
 
     /// The server will be bound to this port
     #[serde(default = "default_port")]
-    port: u32,
+    pub port: u32,
 
     /// Path to the documents
     #[serde(default = "default_doc_path")]
-    doc_path: String,
+    pub doc_path: String,
 
     /// The context should be the https path to the root of the blog.
     /// 
     /// This is used to build links in the blog.
     #[serde(default = "default_context")]
-    context: String,
+    pub context: String,
 
     /// If caching is enabled or not.  If enabled, it the theme will only
     /// be loaded on startup.  If not, the theme will be loaded on every page
     /// request which can be used to edit the theme.
     #[serde(default = "default_caching")]
-    caching: bool,
+    pub caching: bool,
 }
 impl Default for Config {
     fn default() -> Config {
@@ -75,32 +74,12 @@ impl Default for Config {
         }
     }
 }
-
-lazy_static! {
-    pub static ref BLOG_CONFIG: RwLock<Config> =
-        RwLock::new(if let Ok(file) = File::open("config.yml") {
+impl Config {
+    pub fn read(path: &str) -> Config {
+        if let Ok(file) = File::open(path) {
             serde_yaml::from_reader(&file).unwrap_or_default()
         } else {
             Config::default()
-        });
-}
-
-/// Get the configured hostname
-pub fn get_hostname() -> String {
-    BLOG_CONFIG.read().unwrap().hostname.clone()
-}
-/// Get the configured port
-pub fn get_port() -> u32 {
-    BLOG_CONFIG.read().unwrap().port
-}
-/// Get the configured path to the blog files
-pub fn get_doc_path() -> String {
-    BLOG_CONFIG.read().unwrap().doc_path.clone()
-}
-/// Get the root URL of the blog
-pub fn get_context() -> String {
-    BLOG_CONFIG.read().unwrap().context.clone()
-}
-pub fn get_caching() -> bool {
-    BLOG_CONFIG.read().unwrap().caching
+        }
+    }
 }

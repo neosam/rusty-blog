@@ -6,6 +6,8 @@ mod filerparser;
 mod servicemappings;
 mod serverstate;
 mod server;
+mod render;
+mod post;
 
 
 use error::BlogResult;

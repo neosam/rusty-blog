@@ -6,13 +6,11 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::ops::DerefMut;
-use handlebars::Handlebars;
 use crate::serverstate::ServerState;
 use crate::template::setup_templates;
 use mdbook::utils::render_markdown;
 
 use crate::error::*;
-use crate::config::*;
 
 /// Contains the content of a blog entry
 /// 
@@ -20,10 +18,10 @@ use crate::config::*;
 #[derive(Serialize)]
 pub struct ParsedDocument {
     /// Key/value pairs for the header
-    header: HashMap<String, String>,
+    pub header: HashMap<String, String>,
 
     /// The content of the entry
-    body: String,
+    pub body: String,
 }
 
 #[derive(Serialize)]
@@ -64,8 +62,10 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
         if let Some(line) = line_opt {
             let mut splitted = line.split(":");
             let key = splitted.next();
-            let value = splitted.next();
-            if let (Some(key), Some(value)) = (key, value) {
+            let value = splitted
+                    .collect::<Vec<&str>>()
+                    .join(":");
+            if let (Some(key), value) = (key, value) {
                 header.insert(key.to_string(), value.to_string());
             } else {
                 return Err(Box::new(ParseError(
@@ -85,38 +85,20 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     Ok(ParsedDocument { header, body })
 }
 
-/// Renders a blog post
-/// 
-/// It requires the Handlebars template content, the template name, the text
-/// to pass as main area to the template and additional values to pass to the
-/// template.
-pub fn render_template(
-    reg: &Handlebars,
-    name: &str,
-    text: &str,
-    context: &HashMap<String, String>,
-) -> BlogResult<String> {
-    let mut inner_context = context.clone();
-    inner_context.insert("main".to_string(), text.to_string());
-    inner_context.insert("ctxt".to_string(), get_context());
-
-    Ok(reg.render(name, &inner_context).unwrap())
-}
-
 /// Renders a list page
 /// 
 /// It requires the Handlebars template content, the name of the template,
 /// the ParsedDocuments to display in the list and key/value pairs.
 pub fn render_list_template(
-    reg: &Handlebars,
+    state: &ServerState,
     name: &str,
     content: &Vec<ParsedDocument>,
     context: &HashMap<String, String>,
 ) -> BlogResult<String> {
     let mut inner_context = context.clone();
-    inner_context.insert("ctxt".to_string(), get_context());
+    inner_context.insert("ctxt".to_string(), state.config.context.clone());
 
-    Ok(reg.render(name, &ListContent::new(content, &inner_context))?)
+    Ok(state.reg.read().unwrap().render(name, &ListContent::new(content, &inner_context))?)
 }
 
 /// Open the file on the given path and return its content
@@ -128,29 +110,12 @@ pub fn read_file_to_string(path: &str) -> BlogResult<String> {
     Ok(file_content)
 }
 
-
-/// Return the full html code for a post
-/// 
-/// It requires the ServerState, a filename where the markdown lies and the
-/// name for this post for caching.
-pub fn get_post(state: &ServerState, filename: String, name: impl ToString) -> BlogResult<String> {
-    let name = name.to_string();
-    if !get_caching() {
-        setup_templates(state.reg.write().unwrap().deref_mut())?;
-    }
-    let file_content = read_file_to_string(&filename)?;
-    let parsed_document = parse_header(&file_content)?;
-    let html_content = state.md_cache.get_or_insert(&name, || render_markdown(&parsed_document.body, true));
-    let html = render_template(&state.reg.read().unwrap(), "post", &html_content, &parsed_document.header)?;
-    Ok(html)
-}
-
 /// Return the full html code for a list
 /// 
 /// It requires the ServerState and a filename where the list file lies.
 pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
-    if !get_caching() {
-        setup_templates(state.reg.write().unwrap().deref_mut())?;
+    if !state.config.caching {
+        setup_templates(state.reg.write().unwrap().deref_mut(), &state.config)?;
     }
     let list_file_content = read_file_to_string(&filename)?;
     let parsed_list = parse_header(&list_file_content)?;
@@ -159,7 +124,7 @@ pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
         if post.trim() == "" {
             continue;
         }
-        let post_filename = format!("{}/posts/{}.md", get_doc_path(), post.trim());
+        let post_filename = format!("{}/posts/{}.md", state.config.doc_path, post.trim());
         let post_content = read_file_to_string(&post_filename.clone())?;
 
         let mut parsed_document = parse_header(&post_content)?;
@@ -172,6 +137,6 @@ pub fn get_list(state: &ServerState, filename: String) -> BlogResult<String> {
             .insert("id".to_string(), post.trim().to_string());
         posts.push(parsed_document);
     }
-    let html = render_list_template(&state.reg.read().unwrap(), "list", &posts, &parsed_list.header)?;
+    let html = render_list_template(state, "list", &posts, &parsed_list.header)?;
     Ok(html)
 }

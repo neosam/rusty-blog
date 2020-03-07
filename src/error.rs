@@ -11,6 +11,11 @@ impl std::fmt::Display for ParseError {
     }
 }
 impl std::error::Error for ParseError {}
+impl ParseError {
+    pub fn new(message: impl ToString) -> ParseError {
+        ParseError(message.to_string())
+    }
+}
 
 /// Default Result type for the error handling.
 pub type BlogResult<T> = Result<T, Box<dyn std::error::Error>>;

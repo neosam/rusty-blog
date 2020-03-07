@@ -9,23 +9,24 @@ use crate::config::*;
 use crate::error::*;
 
 /// Generate and set up the template system
-pub fn init_templates() -> BlogResult<Handlebars> {
+pub fn init_templates(config: &Config) -> BlogResult<Handlebars<'static>> {
     let mut reg = Handlebars::new();
-    setup_templates(&mut reg)?;
+    setup_templates(&mut reg, config)?;
     Ok(reg)
 }
 
 /// Load the templates which are required for the post
-pub fn setup_templates(reg: &mut Handlebars) -> BlogResult<()> {
-    load_template(reg, "post")?;
-    load_template(reg, "list")?;
+pub fn setup_templates(reg: &mut Handlebars, config: &Config) -> BlogResult<()> {
+    load_template(reg, config, "post")?;
+    load_template(reg, config, "list")?;
     Ok(())
 }
 
 /// Load one specific template
-fn load_template(reg: &mut Handlebars, name: impl ToString) -> BlogResult<()> {
+fn load_template(reg: &mut Handlebars, config: &Config, name: impl ToString) -> BlogResult<()> {
     let template_text =
-        read_file_to_string(format!("{}/templates/{}.html", get_doc_path(), name.to_string()))?;
+        read_file_to_string(format!("{}/templates/{}.html", 
+            config.doc_path, name.to_string()))?;
     reg.register_template_string(&name.to_string(), &template_text.to_string())?;
     Ok(())
 }

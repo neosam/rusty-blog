@@ -39,7 +39,7 @@ impl MarkdownCache {
     }
 
     /// Generate path to the markdown file
-    fn gen_md_path(&self, name: &str) -> PathBuf {
+    pub fn gen_md_path(&self, name: &str) -> PathBuf {
         let path = Path::new(&self.md_dir);
         let name = name.to_string();
         let file = path.join(&name).with_extension("md");
