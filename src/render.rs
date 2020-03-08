@@ -1,5 +1,6 @@
 use serde::Serialize;
 use crate::post::Post;
+use crate::list::List;
 use crate::serverstate::ServerState;
 use mdbook::utils::render_markdown;
 
@@ -35,6 +36,26 @@ impl<'a> PostData<'a> {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ListData<'a> {
+    pub blog: BlogData<'a>,
+    pub name: &'a str,
+    pub title: &'a str,
+    pub posts: Vec<PostData<'a>>,
+}
+impl<'a> ListData<'a> {
+    pub fn from_list(list: &'a List, state: &'a ServerState) -> ListData<'a> {
+        ListData {
+            blog: BlogData {
+                ctxt: &state.config.context,
+            },
+            name: &list.name,
+            title: &list.title,
+            posts: list.posts.iter().map(|post| PostData::from_post(post, state)).collect(),
+        }
+    }
+}
+
 pub fn render_post_file(state: &ServerState, name: &str) -> BlogResult<String> {
     render_post(state, &Post::from_name(state, name)?)
 }
@@ -42,4 +63,13 @@ pub fn render_post_file(state: &ServerState, name: &str) -> BlogResult<String> {
 pub fn render_post(state: &ServerState, post: &Post) -> BlogResult<String> {
     let handlebars = &*state.reg.read().unwrap();
     Ok(handlebars.render("post", &PostData::from_post(post, state))?)
+}
+
+pub fn render_list_file(state: &ServerState, name: &str) -> BlogResult<String> {
+    render_list(state, &List::from_name(state, name)?)
+}
+
+pub fn render_list(state: &ServerState, list: &List) -> BlogResult<String> {
+    let handlebars = &*state.reg.read().unwrap();
+    Ok(handlebars.render("list", &ListData::from_list(list, state))?)
 }

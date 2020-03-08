@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::sync::RwLock;
 
 /// The default hostname is on local loopback.
 fn default_hostname() -> String {

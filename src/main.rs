@@ -8,7 +8,7 @@ mod serverstate;
 mod server;
 mod render;
 mod post;
-
+mod list;
 
 use error::BlogResult;
 

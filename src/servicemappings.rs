@@ -7,7 +7,7 @@ use crate::serverstate::ServerState;
 
 use crate::error::*;
 use crate::filerparser::*;
-use crate::render::render_post_file;
+use crate::render::*;
 
 /// Return a valid response the client
 fn respond(content: BlogResult<impl ToString>) -> impl Responder {
@@ -23,7 +23,7 @@ fn respond(content: BlogResult<impl ToString>) -> impl Responder {
 /// Display the main list of the blog
 #[get("/")]
 pub async fn index(state: web::Data<ServerState>) -> impl Responder {
-    respond(get_list(&state, format!("{}/lists/main.txt", state.config.doc_path)))
+    respond(render_list_file(&state, "main"))
 }
 
 /// Just a test
@@ -41,16 +41,15 @@ pub async fn static_files(state: web::Data<ServerState>, info: web::Path<String>
 
 /// Respond a blog post
 #[get("/post/{name}.html")]
-pub async fn post_controller(name: web::Path<String>, reg: web::Data<ServerState>) -> impl Responder {
+pub async fn post_controller(name: web::Path<String>, state: web::Data<ServerState>) -> impl Responder {
     debug!("start post '{}'", name);
-    let result = respond(render_post_file(&reg, &name));
+    let result = respond(render_post_file(&state, &name));
     debug!("finished post '{}'", name);
     result
 }
 
 /// Respond a list
 #[get("/list/{name}.html")]
-pub async fn list_controller(info: web::Path<String>, state: web::Data<ServerState>) -> impl Responder {
-    let filename = format!("{}/lists/{}.txt", state.config.doc_path, *info);
-    respond(get_list(&state, filename))
+pub async fn list_controller(name: web::Path<String>, state: web::Data<ServerState>) -> impl Responder {
+    respond(render_list_file(&state, &name))
 }
