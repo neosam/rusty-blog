@@ -1,6 +1,7 @@
 //! Return the servers
 
 use actix_web::{App, HttpServer};
+use actix_files as fs;
 use log::{info, debug};
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -37,7 +38,9 @@ pub async fn run() -> BlogResult<()> {
             .service(index)
             .service(post_controller)
             .service(list_controller)
-            .service(static_files)
+            .service(fs::Files::new(
+                "/static", &format!("{}/static/", &doc_path)
+            ))
     })
     .bind(format!("{}:{}", hostname, port))?
     .run()

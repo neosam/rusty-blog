@@ -35,6 +35,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-files"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "301482841d3d74483a446ead63cb7d362e187d2c8b603f13d91995621ea53c46"
+dependencies = [
+ "actix-http",
+ "actix-service",
+ "actix-web",
+ "bitflags",
+ "bytes 0.5.4",
+ "derive_more",
+ "futures",
+ "log 0.4.8",
+ "mime 0.3.16",
+ "mime_guess 2.0.3",
+ "percent-encoding 2.1.0",
+ "v_htmlescape",
+]
+
+[[package]]
 name = "actix-http"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1233,7 +1253,7 @@ checksum = "c6d308ca2d884650a8bf9ed2ff4cb13fbb2207b71f64cda11dc9b892067295e8"
 dependencies = [
  "hyper",
  "log 0.3.9",
- "mime_guess",
+ "mime_guess 1.8.8",
  "modifier",
  "num_cpus",
  "plugin",
@@ -1441,6 +1461,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mime_guess"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2684d4c2e97d99848d30b324b00c8fcc7e5c897b7cbb5819b09e7c90e8baf212"
+dependencies = [
+ "mime 0.3.16",
+ "unicase 2.6.0",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1535,6 +1565,16 @@ name = "new_debug_unreachable"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
+
+[[package]]
+name = "nom"
+version = "4.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ad2a91a8e869eeb30b9cb3119ae87773a8f4ae617f41b1eb9c154b2905f7bd6"
+dependencies = [
+ "memchr",
+ "version_check 0.1.5",
+]
 
 [[package]]
 name = "notify"
@@ -2069,6 +2109,7 @@ checksum = "4c691c0e608126e00913e33f0ccf3727d5fc84573623b8d65b2df340b5201783"
 name = "rusty-blog"
 version = "0.1.0"
 dependencies = [
+ "actix-files",
  "actix-rt",
  "actix-web",
  "chrono",
@@ -2654,6 +2695,37 @@ name = "utf-8"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05e42f7c18b8f902290b009cde6d651262f956c98bc51bca4cd1d511c9cd85c7"
+
+[[package]]
+name = "v_escape"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "660b101c07b5d0863deb9e7fb3138777e858d6d2a79f9e6049a27d1cc77c6da6"
+dependencies = [
+ "v_escape_derive",
+]
+
+[[package]]
+name = "v_escape_derive"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2ca2a14bc3fc5b64d188b087a7d3a927df87b152e941ccfbc66672e20c467ae"
+dependencies = [
+ "nom",
+ "proc-macro2 1.0.8",
+ "quote 1.0.2",
+ "syn 1.0.15",
+]
+
+[[package]]
+name = "v_htmlescape"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e33e939c0d8cf047514fb6ba7d5aac78bc56677a6938b2ee67000b91f2e97e41"
+dependencies = [
+ "cfg-if",
+ "v_escape",
+]
 
 [[package]]
 name = "vec_map"
