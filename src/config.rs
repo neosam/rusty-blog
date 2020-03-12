@@ -23,7 +23,6 @@ fn default_context() -> String {
     String::new()
 }
 
-
 /// By default, caching is enabled
 fn default_caching() -> bool {
     true
@@ -33,11 +32,11 @@ fn default_caching() -> bool {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
     /// Hostname which is should be bound
-    /// 
+    ///
     /// Use 127.0.0.1 to bind it to the localhost only.  Then the blog will
     /// not be accessable from the outside.  This is good for editing content
     /// and not for hosting.
-    /// 
+    ///
     /// Use 0.0.0.0 to make the page accessable from the network / the internet.
     #[serde(default = "default_hostname")]
     pub hostname: String,
@@ -51,7 +50,7 @@ pub struct Config {
     pub doc_path: String,
 
     /// The context should be the https path to the root of the blog.
-    /// 
+    ///
     /// This is used to build links in the blog.
     #[serde(default = "default_context")]
     pub context: String,

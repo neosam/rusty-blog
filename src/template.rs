@@ -24,10 +24,12 @@ pub fn setup_templates(reg: &mut Handlebars, config: &Config) -> BlogResult<()> 
 
 /// Load one specific template
 fn load_template(reg: &mut Handlebars, config: &Config, name: impl ToString) -> BlogResult<()> {
-    let template_text =
-        read_file_to_string(format!("{}/templates/{}.html", 
-            config.doc_path, name.to_string()))?;
-    reg.register_template_string(&name.to_string(), &template_text.to_string())?;
+    let template_text = read_file_to_string(format!(
+        "{}/templates/{}.html",
+        config.doc_path,
+        name.to_string()
+    ))?;
+    reg.register_template_string(&name.to_string(), &template_text)?;
     Ok(())
 }
 

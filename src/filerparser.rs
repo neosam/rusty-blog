@@ -33,7 +33,7 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     let mut line_opt = lines.next();
     if line_opt != Some("---") {
         let error_msg = if let Some(line) = line_opt {
-            format!("Expected starting --- but got {}", line).to_string()
+            format!("Expected starting --- but got {}", line)
         } else {
             "File seems to be empty".to_string()
         };
@@ -42,7 +42,7 @@ pub fn parse_header(content: &str) -> BlogResult<ParsedDocument> {
     line_opt = lines.next();
     while line_opt != Some("---") {
         if let Some(line) = line_opt {
-            let mut splitted = line.split(":");
+            let mut splitted = line.split(':');
             let key = splitted.next();
             let value = splitted
                     .collect::<Vec<&str>>()

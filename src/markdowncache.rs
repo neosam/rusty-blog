@@ -1,10 +1,10 @@
 //! Utilities to cache the markdown files
 
-use std::fs::create_dir_all;
-use std::path::{Path, PathBuf};
-use std::io::{Read, Write};
-use std::fs::File;
 use log::debug;
+use std::fs::create_dir_all;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
 
 /// Utility to cache the markdown files
 pub struct MarkdownCache {
@@ -52,7 +52,10 @@ impl MarkdownCache {
         let name = name.to_string();
         let value = value.to_string();
         let file = self.gen_path(&name);
-        File::create(file).unwrap().write_all(value.as_bytes()).unwrap();
+        File::create(file)
+            .unwrap()
+            .write_all(value.as_bytes())
+            .unwrap();
         value
     }
 
@@ -61,7 +64,10 @@ impl MarkdownCache {
         let file = self.gen_path(name);
         if file.exists() {
             let mut result = String::new();
-            File::open(file).unwrap().read_to_string(&mut result).unwrap();
+            File::open(file)
+                .unwrap()
+                .read_to_string(&mut result)
+                .unwrap();
             Some(result)
         } else {
             None
@@ -69,15 +75,17 @@ impl MarkdownCache {
     }
 
     /// Get a cached content if it is found and not outdated or generate it
-    /// 
+    ///
     /// If the cached file doesn't exist or if its older than the markdown file,
     /// it the load_fn callback is executed.  If there is a cache file, read
     /// and return the value.
     pub fn get_or_insert(&self, name: &str, load_fn: impl FnOnce() -> String) -> String {
         let file = self.gen_path(name);
         let md_file = self.gen_md_path(name);
-        if file.exists() 
-                && file.metadata().unwrap().modified().unwrap() > md_file.metadata().unwrap().modified().unwrap() {
+        if file.exists()
+            && file.metadata().unwrap().modified().unwrap()
+                > md_file.metadata().unwrap().modified().unwrap()
+        {
             self.get(name).unwrap()
         } else {
             self.set(name, load_fn())

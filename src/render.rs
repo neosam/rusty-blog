@@ -1,14 +1,14 @@
-use serde::Serialize;
-use crate::post::Post;
 use crate::list::List;
+use crate::post::Post;
 use crate::serverstate::ServerState;
 use mdbook::utils::render_markdown;
+use serde::Serialize;
 
 use crate::error::*;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct BlogData<'a> {
-    ctxt: &'a str
+    ctxt: &'a str,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -30,7 +30,9 @@ impl<'a> PostData<'a> {
             name: &post.name,
             title: &post.title,
             author: &post.author,
-            body: state.md_cache.get_or_insert(&post.name, || render_markdown(&post.body, true)),
+            body: state
+                .md_cache
+                .get_or_insert(&post.name, || render_markdown(&post.body, true)),
             date: post.date.to_string(),
         }
     }
@@ -51,7 +53,11 @@ impl<'a> ListData<'a> {
             },
             name: &list.name,
             title: &list.title,
-            posts: list.posts.iter().map(|post| PostData::from_post(post, state)).collect(),
+            posts: list
+                .posts
+                .iter()
+                .map(|post| PostData::from_post(post, state))
+                .collect(),
         }
     }
 }

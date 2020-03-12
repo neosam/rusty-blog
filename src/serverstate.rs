@@ -1,10 +1,10 @@
 //! Internal server state
 
-use handlebars::Handlebars;
+use crate::config;
 use crate::markdowncache::MarkdownCache;
+use handlebars::Handlebars;
 use std::sync::Arc;
 use std::sync::RwLock;
-use crate::config;
 
 /// Holds the internal server state
 pub struct ServerState {

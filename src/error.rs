@@ -1,7 +1,7 @@
 //! Contains types required to handle errors
 
 /// Custom error if parsing failed
-/// 
+///
 /// It contains a String to describe the error in more detail.
 #[derive(Debug)]
 pub struct ParseError(pub String);
