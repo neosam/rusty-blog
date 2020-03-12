@@ -28,6 +28,10 @@ fn default_caching() -> bool {
     true
 }
 
+fn default_all_posts() -> bool {
+    false
+}
+
 /// Contains the configuration for the application
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -60,6 +64,9 @@ pub struct Config {
     /// request which can be used to edit the theme.
     #[serde(default = "default_caching")]
     pub caching: bool,
+
+    #[serde(default = "default_all_posts")]
+    pub all_posts: bool,
 }
 impl Default for Config {
     fn default() -> Config {
@@ -69,6 +76,7 @@ impl Default for Config {
             doc_path: "./".to_string(),
             context: "".to_string(),
             caching: true,
+            all_posts: false,
         }
     }
 }

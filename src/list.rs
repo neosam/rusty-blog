@@ -26,6 +26,8 @@ impl List {
     pub fn from_str(state: &ServerState, data: &str, name: impl ToString) -> BlogResult<List> {
         let parsed_document = parse_header(data)?;
         let name = name.to_string();
+        let current_datetime: chrono::DateTime<chrono::FixedOffset> = chrono::Local::now().into();
+        let show_all_posts = state.config.all_posts;
         let title = parsed_document
             .header
             .get("title")
@@ -35,6 +37,7 @@ impl List {
             .body
             .lines()
             .filter_map(|post_name| Post::from_name(state, post_name).ok())
+            .filter(|post| show_all_posts || post.date < current_datetime)
             .collect();
 
         Ok(List { name, title, posts })
