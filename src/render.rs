@@ -9,6 +9,19 @@ use crate::error::*;
 #[derive(Serialize, Debug, Clone)]
 pub struct BlogData<'a> {
     ctxt: &'a str,
+    software_version: &'static str,
+    software_name: &'static str,
+}
+impl<'a> BlogData<'a> {
+    pub fn new(ctxt: &'a str) -> BlogData<'a> {
+        let software_version: &'static str = env!("CARGO_PKG_VERSION");
+        let software_name: &'static str = env!("CARGO_PKG_NAME");
+        BlogData {
+            ctxt,
+            software_version,
+            software_name,
+        }
+    }
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -24,9 +37,7 @@ pub struct PostData<'a> {
 impl<'a> PostData<'a> {
     pub fn from_post(post: &'a Post, state: &'a ServerState) -> PostData<'a> {
         PostData {
-            blog: BlogData {
-                ctxt: &state.config.context,
-            },
+            blog: BlogData::new(&state.config.context),
             name: &post.name,
             title: &post.title,
             author: &post.author,
@@ -48,9 +59,7 @@ pub struct ListData<'a> {
 impl<'a> ListData<'a> {
     pub fn from_list(list: &'a List, state: &'a ServerState) -> ListData<'a> {
         ListData {
-            blog: BlogData {
-                ctxt: &state.config.context,
-            },
+            blog: BlogData::new(&state.config.context),
             name: &list.name,
             title: &list.title,
             posts: list
