@@ -29,7 +29,7 @@ pub async fn index(state: web::Data<ServerState>) -> impl Responder {
 /// Just a test
 #[get("/{id}/{name}/index.html")]
 pub async fn advanced_index(info: web::Path<(u32, String)>) -> impl Responder {
-    format!("Hello {}! id: {}", info.1, info.0)
+    format!("Hello {}! id: {}", info.1, info.0.0)
 }
 
 /// Return static files from the static directory

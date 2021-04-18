@@ -12,7 +12,7 @@ mod list;
 
 use error::BlogResult;
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> BlogResult<()> {
     env_logger::init();
     server::run().await?;
