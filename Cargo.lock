@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-blog"
-version = "0.1.2-dev"
+version = "0.1.3"
 dependencies = [
  "actix-files",
  "actix-rt 2.2.0",
