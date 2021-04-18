@@ -1,6 +1,6 @@
 [package]
 name = "rusty-blog"
-version = "0.1.3"
+version = "0.1.4-dev"
 authors = ["Simon Goller <neosam+github@posteo.de>"]
 edition = "2018"
 
