@@ -1,0 +1,23 @@
+<!doctype html>
+<html>    
+ <head>    
+  <meta charset="UTF-8">    
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title> New blog - blog</title>    
+ </head>    
+ <body>    
+  <div class="container">
+  <header>    
+   <h1><a href="http://localhost:2536">neosam's dev blog</a></h1>    
+   <h2> New blog</h2>    
+  </header>   
+  <main>
+   <article>
+    <p>This is a very simple post. </p>
+
+    <footer>Author:  the author, published: 2019-11-26 09:00:00 +02:00</footer>    
+   </article>    
+  </main>
+  </div>
+ </body>
+</html>

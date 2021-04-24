@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!-- List template -->
+<html>    
+ <head>    
+  <meta charset="UTF-8">    
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{{title}} - blog</title>    
+ </head>    
+ <body>    
+  <div class="container">
+  <header>    
+   <h1><a href="{{blog.ctxt}}">neosam's dev blog</a></h1>    
+   <h2>{{title}}</h2>    
+  </header>   
+  <main>
+   {{#each posts}}
+   <article>
+   <h1><a href="{{blog.ctxt}}/post/{{name}}.html">{{title}}</a></h1>    
+    {{{body}}}
+    <footer>Author: {{author}}, published: {{date}}</footer>    
+   </article>    
+   {{/each}}
+  </main>
+  </div>
+ </body>
+</html>

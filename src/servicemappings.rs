@@ -24,6 +24,7 @@ fn respond(content: BlogResult<impl ToString>) -> impl Responder {
 #[get("/")]
 pub async fn index(state: web::Data<ServerState>) -> impl Responder {
     respond(render_list_file(&state, "main"))
+        .with_header("content-type", "text/html")
 }
 
 /// Just a test
@@ -43,7 +44,8 @@ pub async fn static_files(state: web::Data<ServerState>, info: web::Path<String>
 #[get("/post/{name}.html")]
 pub async fn post_controller(name: web::Path<String>, state: web::Data<ServerState>) -> impl Responder {
     debug!("start post '{}'", name);
-    let result = respond(render_post_file(&state, &name));
+    let result = respond(render_post_file(&state, &name))
+        .with_header("content-type", "text/html");
     debug!("finished post '{}'", name);
     result
 }
@@ -52,4 +54,5 @@ pub async fn post_controller(name: web::Path<String>, state: web::Data<ServerSta
 #[get("/list/{name}.html")]
 pub async fn list_controller(name: web::Path<String>, state: web::Data<ServerState>) -> impl Responder {
     respond(render_list_file(&state, &name))
+        .with_header("content-type", "text/html")
 }

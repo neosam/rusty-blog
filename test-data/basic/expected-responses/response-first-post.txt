@@ -1,0 +1,43 @@
+<!doctype html>
+<html>    
+ <head>    
+  <meta charset="UTF-8">    
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title> New blog - blog</title>    
+ </head>    
+ <body>    
+  <div class="container">
+  <header>    
+   <h1><a href="http://localhost:2536">neosam's dev blog</a></h1>    
+   <h2> New blog</h2>    
+  </header>   
+  <main>
+   <article>
+    <p>Once again, I try to start to run a new blog.  But now, I write my own blog
+software.  Well I know this is nonsense since there is already a lot of much
+better weblog software out there and what I write doesn’t add any value.</p>
+<p>So, why am I doing this?  I try to get some more experience with Rust in
+web development.  For a basic blogging software, I just needed 236 lines of
+code.  And currently it provides these features:</p>
+<ul>
+<li>Threaded web server thanks to actix-web.</li>
+<li>Templating system to create custom themes thanks to tinytemplate.</li>
+<li>Static file share to host css files.</li>
+<li>Display posts which are stored as markdown files thanks to the markdown
+library.</li>
+<li>Display a list of posts.</li>
+<li>And loggging! (= env_logger)</li>
+</ul>
+<p>A lot of very important features are still missing.  For example RSS feeds and
+comments.  The implementation I made was not very smart and for example the
+template engine gets initialized on every page request.  Since I don’t expect
+many visitors on this page, this is good enough for now but this needs to be
+fixed.  Hopefully I can make an update in 2019.</p>
+<p>The code is available at <a href="https://github.com/neosam/rusty-blog" title="Github">https://github.com/neosam/rusty-blog</a></p>
+
+    <footer>Author:  neosam, published: 2019-11-24 09:00:00 +02:00</footer>    
+   </article>    
+  </main>
+  </div>
+ </body>
+</html>

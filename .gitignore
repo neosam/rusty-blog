@@ -1,3 +1,5 @@
 /target
 **/*.rs.bk
 config.yml
+test-data/**/test-responses
+test-data/**/work
