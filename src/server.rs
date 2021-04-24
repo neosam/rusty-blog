@@ -15,7 +15,14 @@ use crate::serverstate::ServerState;
 
 /// Run the server
 pub async fn run() -> BlogResult<()> {
-    let config = Arc::new(Config::read("config.yml"));
+    let mut args = std::env::args();
+    args.next();
+    let config_path = if let Some(config_path) = args.next() {
+        config_path.to_string()
+    } else {
+        "config.yml".to_string()
+    };
+    let config = Arc::new(Config::read(&config_path));
     let hostname = config.hostname.clone();
     let port = config.port;
     let doc_path = config.doc_path.clone();

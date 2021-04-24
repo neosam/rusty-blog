@@ -61,21 +61,40 @@ fn test_response(name: &str, mime_type: &str, url: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn startup(workdir: &str, config_file: Option<&str>) -> process::Child {
+    set_current_dir(workdir).expect("Couldn't change directory");
+    let args = if let Some(config_file) = config_file {
+        vec!["run", config_file]
+    } else {
+        vec!["run"]
+    };
+    let process = Command::new("cargo")
+        .args(args)
+        .spawn()
+        .expect("Couldn't start the server");
+    sleep(Duration::from_secs(2));
+    process
+}
+
 fn cleanup(mut process: process::Child) {
     process.kill().expect("Couldn't kill server");
     set_current_dir("../..").expect("Couldn't change directory back");
 }
+fn handle_error(err: anyhow::Error, process: process::Child) {
+    println!("{:?}", err);
+    if let Some(test_error) = err.downcast_ref::<TestError>() {
+        println!("Test MSG: {}", test_error.msg);
+        println!("Expected: {}", test_error.expected);
+        println!("Actual:   {}", test_error.actual);
+    }
+    cleanup(process);
+    panic!();
+}
 
 #[test]
-fn test() {
-    set_current_dir("test-data/basic").expect("Couldn't change directory");
-    let process = Command::new("cargo")
-        .args(&["run"])
-        .spawn()
-        .expect("Couldn't start the server");
+fn default_setup_test() {
+    let process = startup("test-data/basic", None);
     match || -> anyhow::Result<()> {
-        sleep(Duration::from_secs(2));
-
         test_response("index", "text/html", "http://localhost:2536")?;
         test_response("simple-post", "text/html", "http://localhost:2536/post/2019-11-26-simple-post.html")?;
         test_response("first-post", "text/html",  "http://localhost:2536/post/2019-11-24-first-post.html")?;
@@ -87,14 +106,24 @@ fn test() {
             cleanup(process);
         },
         Err(err) => {
-            println!("{:?}", err);
-            if let Some(test_error) = err.downcast_ref::<TestError>() {
-                println!("Test MSG: {}", test_error.msg);
-                println!("Expected: {}", test_error.expected);
-                println!("Actual:   {}", test_error.actual);
-            }
+            handle_error(err, process);
+        }
+    };
+}
+
+#[test]
+fn all_posts_test() {
+    let process = startup("test-data/basic", Some("config-all-posts.yml"));
+    match || -> anyhow::Result<()> {
+        test_response("all-posts-index", "text/html", "http://localhost:2537")?;
+    
+        Ok(())
+    }() {
+        Ok(_) => {
             cleanup(process);
-            panic!();
+        },
+        Err(err) => {
+            handle_error(err, process);
         }
     };
 }

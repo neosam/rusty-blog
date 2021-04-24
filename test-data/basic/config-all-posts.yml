@@ -1,0 +1,6 @@
+hostname: 0.0.0.0
+port: 2537
+context: http://localhost:2537
+doc_path: ./blog_content
+caching: false
+all_posts: true
