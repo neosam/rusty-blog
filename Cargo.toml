@@ -19,6 +19,7 @@ env_logger = "0.8"
 lazy_static = "1.4"
 rss = "1.9"
 chrono = { version = "0.4", features = ["serde"] }
+smallvec = "1.6.1"
 
 [dev-dependencies]
 reqwest = {version = "0.11", features = ["blocking"] }
